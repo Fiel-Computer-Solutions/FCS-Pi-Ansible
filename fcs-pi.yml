@@ -1,0 +1,75 @@
+- hosts: 127.0.0.1
+  connection: local
+  tasks:
+  - name: Import Configuration
+    include_vars: config.yml
+
+  - name: Add FCS-PI SSH Key to pi user
+    authorized_key:
+      user: pi
+      state: present
+      key: "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAuA8N86G1Xlbs+FKm39NLlO1FCN4S6bEn8uRgOaLNpX/1TE7HPWA7/5+KDDCHTxyE03/LV99kxwjj+F+dbMXntKj8zgWbLO4IQw0wZFD8CLheYQJrtlGm5V+y0eiL+sYUDujOL6Eck2WHZCNl2FTt2G27DpX0hmHQi0XhDkL7MGDeH0qPxYNkfAYY9Pip4nx8HxvAGY7kdO1f0+ftR0W6Kt9iTI91SRnC5+j4sFT7RLvZHffuIzec8f9QGCnDefGO4gmrVzmuwAMGHnrkl2d21b/ZhOGfMqfH3irg+ZfVdLwWT6nHEd9uAju6qbp2KDFqjYdL7pMMUan2Rg0bwSAL9Q== fcs-pi"
+
+  - name: Disable Password Authentication for SSH
+    lineinfile:
+      dest: /etc/ssh/sshd_config
+      state: present
+      regexp: '^PasswordAuthentication'
+      line: 'PasswordAuthentication no'
+
+  - name: Enable Port Forwarding for SSH
+    lineinfile:
+      dest: /etc/ssh/sshd_config
+      state: present
+      regexp: '^GatewayPorts'
+      line: 'GatewayPorts yes'
+
+  - name: Restart SSH Service
+    systemd:
+      name: ssh
+      state: restarted
+      enabled: yes
+
+  - include_tasks: tasks/unique_machine_id.yml
+
+  - name: Apply WiFi Credentials
+    blockinfile:
+      path: /etc/wpa_supplicant/wpa_supplicant.conf
+      block: |
+        network={
+            ssid={{ wifi_ssid }}
+            psk={{ wifi_password }}
+        }
+
+  - name: Set WiFi Country Code
+    lineinfile:
+      dest: /etc/wpa_supplicant/wpa_supplicant.conf
+      state: present
+      regexp: '^country'
+      line: 'country=US'
+
+  - name: Reconfigure Wireless Adapter
+    command: wpa_cli -i wlan0 reconfigure
+
+  - name: Ensure we have en_US locale
+    locale_gen:
+      name: en_US.UTF-8
+      state: present
+
+  - name: Remove the en_GB locale
+    locale_gen:
+      name: en_GB.UTF-8
+      state: absent
+
+  - name: Set en_US as default locale
+    command: localectl set-locale LANG=en_US.UTF-8
+
+  - name: Check if ddclient is installed
+    stat:
+      path: /usr/sbin/ddclient
+    register: ddclient
+
+  - name: Install ddclient
+    include_tasks: tasks/install_ddclient.yml
+    when: ddclient.stat.exists == False
+
