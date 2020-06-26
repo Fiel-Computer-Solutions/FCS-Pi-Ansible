@@ -81,5 +81,5 @@
 
   - name: Install ddclient
     include_tasks: tasks/install_ddclient.yml
-    when: not ddclient.stat.exists or reinstall-ddclient
+    when: not ddclient.stat.exists or reinstall_ddclient
 
