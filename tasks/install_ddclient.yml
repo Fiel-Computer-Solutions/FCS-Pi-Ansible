@@ -1,0 +1,56 @@
+- name: Install APT dependencies
+  apt:
+    name:
+    - libdata-validate-ip-perl
+    - libio-socket-ssl-perl
+    state: present
+
+- name: Download ddclient from GitHub
+  git:
+    repo: https://github.com/Fiel-Computer-Solutions/ddclient.git
+    dest: /tmp/ddclient
+
+- name: Copy ddclient to /usr/sbin/
+  copy:
+    src: /tmp/ddclient/ddclient
+    dest: /usr/sbin/ddclient
+    remote_src: yes
+
+- name: Create required directories
+  file:
+    path: "{{ item }}"
+    state: directory
+  loop:
+     - /etc/ddclient
+     - /var/cache/ddclient
+
+- name: Write ddclient configuration to disk
+  blockinfile:
+    path: /etc/ddclient/ddclient.conf
+    create: yes
+    block: |
+       daemon=300
+       ssl=yes
+       protocol=cloudflare
+       use=web
+       login=token
+       password={{ cloudflare_token }}
+       zone={{ client_dns_zone }}
+       {{ client_dynamic_domain }}
+
+- name: Copy systemd service
+  copy:
+    src: /tmp/ddclient/sample-etc_systemd.service
+    dest: /etc/systemd/system/ddclient.service
+    remote_src: yes
+
+- name: Enable ddclient service
+  systemd:
+    daemon_reload: yes
+    service: ddclient
+    enabled: yes
+
+- name: Remove ddclient files
+  file:
+    path: /tmp/ddclient
+    state: absent
