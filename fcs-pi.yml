@@ -3,8 +3,12 @@
   tasks:
   - name: Import Configuration
     include_vars: config.yml
+    
+  - name: Set Hostname to FCS-Pi
+    hostname:
+      name: FCS-Pi
 
-  - name: Add FCS-PI SSH Key to pi user
+  - name: Add FCS-Pi SSH Key to pi user
     authorized_key:
       user: pi
       state: present
