@@ -66,6 +66,10 @@
   - name: Set en_US as default locale
     command: localectl set-locale LANG=en_US.UTF-8
 
+  - name: Set Timezone to America/New_York
+    timezone:
+      name: America/New_York
+
   - name: Check if ddclient is installed
     stat:
       path: /usr/sbin/ddclient
