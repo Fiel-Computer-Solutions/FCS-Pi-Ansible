@@ -30,6 +30,7 @@
     create: yes
     block: |
        daemon=300
+       pid=/var/run/ddclient.pid
        ssl=yes
        protocol=cloudflare
        use=web
